@@ -1,4 +1,14 @@
+/**
+ * Take photos, and get the bytes.
+ * 
+ * @author Ryan D. Johnson
+ * 
+ * WPI Battle of the Rockets 2018-2019
+ * Team rocket Powered Locomotive
+ */
+
 #include "Photo.h"
+
 void RoverCamera::begin() {
   uint8_t temp = 0, vid = 0, pid = 0;
   while(true) {
@@ -28,8 +38,22 @@ void RoverCamera::begin() {
   }
   myCAM.set_format(JPEG);
   myCAM.InitCAM();
-  myCAM.OV2640_set_JPEG_size(OV2640_1600x1200); //OV2640_640x480, 1600x1200
+  myCAM.OV2640_set_JPEG_size(OV2640_1600x1200);
 }
+
+/**
+ * Copied and Modified from ArduCam example code. Super ugly, but seems to work.
+ * 
+ * Wrapped the capturing logic in this function, which has two callbacks: 
+ * - One (first) gets executed when the image size is first discovered
+ * - The other one (Second) gets executed every time it reads a chunk of
+ *   bytes from the camera's FIFO.
+ * - The function returns when there are no more bytes to handle in callbacks.
+ * 
+ * Callbacks are used so that extra memory allocation doesn't need to happen.
+ * In this design, the system does NOT store-and-forward, and can run in
+ * memory-constrained environments.
+ */
 
 void RoverCamera::capture(void (*szcallback)(unsigned int len), void (*bytecallback)(byte* bytes, unsigned int len)) {
   char str[8];
@@ -79,7 +103,7 @@ void RoverCamera::capture(void (*szcallback)(unsigned int len), void (*bytecallb
     temp_last = temp;
     temp =  SPI.transfer(0x00);
     //Read JPEG data from FIFO
-    if ( (temp == 0xD9) && (temp_last == 0xFF) ) //If find the end ,break while,
+    if ( (temp == 0xD9) && (temp_last == 0xFF) ) //If find the end, break while
     {
       buf[i++] = temp;  //save the last  0XD9     
       //Write the remain bytes in the buffer
@@ -108,7 +132,6 @@ void RoverCamera::capture(void (*szcallback)(unsigned int len), void (*bytecallb
         
         //Calback bytes
         (*bytecallback) (buf, 256); 
-
 
         
         i = 0;
