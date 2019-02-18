@@ -15,6 +15,7 @@
 
 #include <Stream.h>
 #include "Constants.h"
+#include "DebugDisplay.h"
 
 typedef struct {
   ActionType action;
@@ -22,11 +23,11 @@ typedef struct {
 
 class CommLayer {
   public:
-    CommLayer(Stream* protocstream, Stream* debugstream) : p_stream(protocstream), d_stream(debugstream), unread_msg(false) {};
+    CommLayer(Stream* protocstream, Stream* debugstream, DebugDisplay* debugdisplay) : p_stream(protocstream), d_stream(debugstream), debugDisplay(debugdisplay), unread_msg(false) {};
     CommReturnCode tick();
     bool hasNewMessage() { return unread_msg; };
     InboundMessage* getLatestMessage() { unread_msg = false; return &msgin; };
-
+    InboundMessage* peekLatestMessage() { return &msgin; };
     // Sending
     CommReturnCode writeHeader(OutgoingMessageType t, unsigned int len, OutgoingMessageStatus stat);
     CommReturnCode writeBodyBytes(unsigned char* bytes, unsigned int len);
@@ -37,6 +38,7 @@ class CommLayer {
     bool unread_msg;
     Stream* p_stream;
     Stream* d_stream;
+    DebugDisplay* debugDisplay;
     static const unsigned int MBUFF_SZ = 512;
     char mbuff[MBUFF_SZ];
     int mbuff_idx = 0;

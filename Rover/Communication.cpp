@@ -19,8 +19,8 @@ CommReturnCode CommLayer::tick() {
   }
   if (mbuff[mbuff_idx-1] == '\n' && mbuff[mbuff_idx-2] == '\r' && 
       mbuff[mbuff_idx-3] == '\n' && mbuff[mbuff_idx-4] == '\r' && mbuff_idx > 4 ) {
-    d_stream->println("end of message");
-        char field[20];
+    d_stream->println("[COMM] Got a (completed) message. Headers:");
+    char field[20];
     char value[20];
     int index = 0;
     int index2 = 0;
@@ -45,6 +45,7 @@ CommReturnCode CommLayer::tick() {
           
         } else {
           value[index] = '\0';
+          d_stream->print("  =>");
           d_stream->print(field);
           d_stream->print(": ");
           d_stream->println(value);
@@ -54,7 +55,18 @@ CommReturnCode CommLayer::tick() {
               //take a photo
               msgin.action = TAKE_PHOTO;
               unread_msg = true;
-              //myCAMSSerialWrite();
+            } else if (strncmp(value, "status", 6) == 0) {
+              //retreive status
+              msgin.action = GET_STAT;
+              unread_msg = true;
+            } else if (strncmp(value, "soil", 4) == 0) {
+              //retreive status
+              msgin.action = SOIL_SAMPLE;
+              unread_msg = true;
+            } else if (strncmp(value, "ping", 4) == 0) {
+              //retreive status
+              msgin.action = PING;
+              unread_msg = true;
             }
           }
           break;
@@ -74,7 +86,6 @@ CommReturnCode CommLayer::writeHeader(OutgoingMessageType t, unsigned int len, O
     case PIC:
       p_stream->println("Content-Type: image/jpeg");
       break;
-    case ERR:
     default:
       p_stream->println("Content-Type: text/plain");
   }
@@ -83,13 +94,19 @@ CommReturnCode CommLayer::writeHeader(OutgoingMessageType t, unsigned int len, O
     case M_OK:
       p_stream->println("Status: 200 OK");
       break;
+    case M_BUSY:
+      p_stream->println("Status: 503 BUSY");
+      break;
+    case M_UNPARSEABLE:
+      p_stream->println("Status: 400 UNPROCESSABLE");
+      break;
     case M_ERR:
     default:
       p_stream->println("Status: 500 ERROR");
   }
 
   p_stream->print("\r\n");
-  d_stream->println("Started message");
+  d_stream->println("[COMM] Began Message. Wrote Message Header");
   return OK;
 }
 CommReturnCode CommLayer::writeBodyBytes(unsigned char* bytes, unsigned int len) {
@@ -98,6 +115,6 @@ CommReturnCode CommLayer::writeBodyBytes(unsigned char* bytes, unsigned int len)
 }
 CommReturnCode CommLayer::concludeMessage() {
   p_stream->println("\r\n\r\n\r\n");
-  d_stream->println("Outgoing Message complete");
+  d_stream->println("[COMM] Outgoing Message complete");
   return OK;
 }

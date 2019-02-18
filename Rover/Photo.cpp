@@ -17,11 +17,16 @@ void RoverCamera::begin() {
     myCAM.rdSensorReg8_8(OV2640_CHIPID_LOW, &pid);
     if ((vid != 0x26 ) && (( pid != 0x41 ) || ( pid != 0x42 ))){
       if (debugStream != NULL)
-        debugStream->println(F("Can't find OV2640 module!"));
+        debugStream->println(F("[INIT: Camera] Can't find OV2640 module!"));
+
+        //STOP CODE
+        debugDisplay->setStopCode("CI2C");
+
+        
       delay(1000);continue;
     }else{
       if (debugStream != NULL)
-        debugStream->println(F("OV2640 detected."));break;
+        debugStream->println(F("[INIT: Camera] OV2640 detected."));break;
     }
   }
   while(true){
@@ -29,11 +34,16 @@ void RoverCamera::begin() {
     temp = myCAM.read_reg(ARDUCHIP_TEST1);
     if (temp != 0x55) {
       if (debugStream != NULL)
-        debugStream->println(F("ACK CMD SPI interface Error!"));
+        debugStream->println(F("[INIT: Camera] Error communicating with SPI. Did not recieve ACK."));
+
+        //STOP CODE
+        debugDisplay->setStopCode("CSPI");
+
+        
       delay(1000);continue;    
     } else {
       if (debugStream != NULL)
-        debugStream->println(F("ACK CMD SPI interface OK.")); break;
+        debugStream->println(F("[INIT: Camera] ACK CMD SPI interface OK.")); break;
     }
   }
   myCAM.set_format(JPEG);
@@ -55,6 +65,11 @@ void RoverCamera::begin() {
  * memory-constrained environments.
  */
 
+void RoverCamera::reset() {
+  myCAM.flush_fifo();
+  myCAM.CS_HIGH();
+}
+
 void RoverCamera::capture(void (*szcallback)(unsigned int len), void (*bytecallback)(byte* bytes, unsigned int len)) {
   char str[8];
   byte buf[256];
@@ -69,8 +84,12 @@ void RoverCamera::capture(void (*szcallback)(unsigned int len), void (*bytecallb
   //Start capture
   myCAM.start_capture();
   if (debugStream != NULL)
-    debugStream->println(F("start Capture."));
-  while(!myCAM.get_bit(ARDUCHIP_TRIG , CAP_DONE_MASK));
+    debugStream->println(F("Start Capture."));
+  while(!myCAM.get_bit(ARDUCHIP_TRIG , CAP_DONE_MASK)) {
+    delay(100);
+    debugStream->print(F("."));
+  }
+  debugStream->println(F(""));
   if (debugStream != NULL)
     debugStream->println(F("Capture Done."));  
   length = myCAM.read_fifo_length();

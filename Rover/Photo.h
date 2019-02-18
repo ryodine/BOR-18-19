@@ -16,16 +16,19 @@
 #include <Stream.h>
 #include "memorysaver.h"
 #include "Constants.h"
+#include "DebugDisplay.h"
 
 class RoverCamera {
   public:
-    RoverCamera(unsigned int cs, Stream* debugOutput) : myCAM(OV2640, cs), debugStream(debugOutput) {};
+    RoverCamera(unsigned int cs, Stream* debugOutput, DebugDisplay* debugdisplay) : myCAM(OV2640, cs), debugStream(debugOutput), debugDisplay(debugdisplay) {};
     void begin();
     void capture(void (*szcallback)(unsigned int len), void (*bytecallback)(byte* bytes, unsigned int len));
+    void reset();
     
   private:
     ArduCAM myCAM;
     Stream* debugStream;
+    DebugDisplay* debugDisplay;
   
 };
 
