@@ -1,0 +1,13 @@
+*.iml
+.gradle
+/Handheld/BOR19/local.properties
+/Handheld/BOR19/.idea/caches
+/Handheld/BOR19/.idea/libraries
+/Handheld/BOR19/.idea/modules.xml
+/Handheld/BOR19/.idea/workspace.xml
+/Handheld/BOR19/.idea/navEditor.xml
+/Handheld/BOR19/.idea/assetWizardSettings.xml
+.DS_Store
+/Handheld/BOR19/build
+/Handheld/BOR19/captures
+.externalNativeBuild
