@@ -4,10 +4,12 @@
 #include "Position.h"
 #include "DebugDisplay.h"
 #include "LandingDetection.h"
+#include "Wheel.h"
 #include <Servo.h>
 
 #define PROTOC Serial3
 #define DEBUG Serial
+
 
 DebugDisplay debug;
 CommLayer uplink(&PROTOC, &DEBUG, &debug);
@@ -15,26 +17,37 @@ RoverCamera cam(PIN_CAM_SPI_CS, &DEBUG, &debug);
 PositionSensing pos(&DEBUG, &debug);
 LandingDetection landingDetect(&pos, &DEBUG, &debug);
 
-//Servo test;
+unsigned long error_flasher = 0;
+bool error_light_on = false;
+
+Wheel leftWheel(8,4,5,11, leftwheel);
 
 void setup() {
   DEBUG.begin(DEBUG_BAUD);
   PROTOC.begin(PROTOCOL_BAUD);
-  DEBUG.println("[INIT] Beginning Power-on Set-Up and Self-Tests");
+  pinMode(13, OUTPUT);
+
+  //Initialization
+  DEBUG.println(F("[INIT] Beginning Power-on Set-Up and Self-Tests"));
   debug.begin();
-  Wire1.begin();
+  Wire.begin();
   SPI.begin();
   cam.begin();
   pos.begin();
-  //test.attach(22);
+  landingDetect.begin();
+
+  //Wheel
+  //leftWheel.setup();
+  //leftWheel.zero();
+  
   DEBUG.println("[INIT] Completed");
   debug.setChar("run");
 }
 
+// Camera photo callbacks
 void picSzCb(unsigned int sz) {
   uplink.writeHeader(PIC, sz, M_OK);
 }
-
 void picWrtCb(byte* bytes, unsigned int len) {
   uplink.tick(); //make sure to check for preemptive messages
   if (uplink.hasNewMessage()) {
@@ -46,16 +59,32 @@ void picWrtCb(byte* bytes, unsigned int len) {
     uplink.writeBodyBytes(bytes, len);
   }
 }
-
 void (*writePicToNetFunc)(byte* bytes, unsigned int len) = &picWrtCb;
 void (*picSzFunc)(unsigned int len) = &picSzCb;
-
+int l = 1;
 void loop() {
+  //Ticks
   pos.tick();
   landingDetect.tick();
   uplink.tick();
-  //pos.print();
   debug.tick();
+  //Serial.println(leftWheel.getRotations());
+  if (leftWheel.getRotations() > 3.5 && l != -1) {
+    l = -1;
+  } else if (leftWheel.getRotations() < 1.5 && l != 1) {
+    l = 1;
+  }
+  leftWheel.setOpenLoop(90 * l);
+  leftWheel.tick();
+  
+  //Error Flasher
+  if (pos.hasError() && ((millis() - error_flasher) > 100)) {
+    error_flasher = millis();
+    error_light_on = !error_light_on;
+    digitalWrite(13, error_light_on);
+  }
+  
+  //Message handling
   if (uplink.hasNewMessage()) {
     if (uplink.getLatestMessage()->action == TAKE_PHOTO) {
       DEBUG.println("Photo time");
@@ -67,19 +96,23 @@ void loop() {
       }
       debug.setChar("run");
     } else if (uplink.getLatestMessage()->action == GET_STAT) {      
-
-      // Runtime
-      String body = "Time: ";
-      body += millis();
-      body += "\n";
       
       // ALT
-      body += "Altitude: ";
+      String body = "Altitude: ";
       body += pos.getAltitude();
+      body += "\n";
+
+      body += "POS STATUS: ";
+      body += pos.getErrorFlags();
       body += "\n";
 
       // LAND STATE
       body += "Landing State: ";
+      if (landingDetect.isArmed()) {
+        body += "(ARMED) ";
+      } else {
+        body += "(UNARMED) ";
+      }
       switch (landingDetect.getState()) {
         case NO_TAKEOFF:
           body += "Not yet taken off.";
@@ -102,11 +135,17 @@ void loop() {
       uplink.writeBodyBytes((unsigned char*)body.c_str(), body.length() + 1);
       uplink.concludeMessage();
     } else if (uplink.getLatestMessage()->action == SOIL_SAMPLE) {
-      uplink.writeHeader(STATUS, 0, M_OK); //write OK message with no body
+      uplink.writeHeader(STATUS, 8, M_OK); //write OK message with no body
+      uplink.writeBodyBytes((unsigned char *)"soil req", 4);
       uplink.concludeMessage();
-    } else if (uplink.getLatestMessage()->action == PING) {
+    } else if (uplink.getLatestMessage()->action == PINGM) {
       uplink.writeHeader(PONG, 4, M_OK);
       uplink.writeBodyBytes((unsigned char *)"pong", 4);
+      uplink.concludeMessage();
+    } else if (uplink.getLatestMessage()->action == ARM) {
+      landingDetect.armPhoto();
+      uplink.writeHeader(ARMED, 2, M_OK);
+      uplink.writeBodyBytes((unsigned char *)"ok", 4);
       uplink.concludeMessage();
     }
   }

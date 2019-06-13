@@ -305,6 +305,14 @@ public class XBEESerial {
             sendMessage("photo");
         }
 
+        public void sendArm() {
+            sendMessage("arm");
+        }
+
+        public void sendSoil() {
+            sendMessage("soil");
+        }
+
         class Message {
             public String content_type = "";
             public int content_length = 0;

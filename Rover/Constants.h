@@ -18,7 +18,7 @@
 
 
 //----------PINOUTS----------//
-#define PIN_CAM_SPI_CS 10
+#define PIN_CAM_SPI_CS 12
 
 //---------------------------//
 
@@ -50,8 +50,8 @@ enum ActionType {
   TAKE_PHOTO,
   GET_STAT,
   SOIL_SAMPLE,
-  PING
-};
+  ARM,
+  PINGM };
 
 // Outgoing Messages
 enum OutgoingMessageType {
@@ -59,7 +59,8 @@ enum OutgoingMessageType {
   PIC,
   STATUS,
   ROUTINE_COMPLETE,
-  PONG
+  PONG,
+  ARMED
 };
 
 enum OutgoingMessageStatus {
@@ -90,14 +91,21 @@ enum OutgoingMessageStatus {
 
 #define LD_EWMA_SMOOTHING_ALPHA 0.1 // between 0 and 1
 
-#define LD_TIME_FALLBACK_PRE_TAKEOFF 0   // seconds, assume that it takes off this many seconds in the future if the altimiter breaks
+//#define LD_TIME_FALLBACK_PRE_TAKEOFF 0   // seconds, assume that it takes off this many seconds in the future if the altimiter breaks
 #define LD_TIME_FALLBACK_APOGEE 30      // seconds, assume that it reaches apogee after takeoff at a maximum of this many seconds later
 #define LD_TIME_FALLBACK_DESCEND 60     // seconds, assume that it lands after apogee at a maximum of this many seconds later
 #define LD_TIME_FALLBACK_GROUND_DELAY 20 // seconds, assume that it takes this long to settle after falling within the allowable ground deadband
+
+
+#define PHOTORESISTOR_IN 22
 //---------------------------//
 
 //----------Camera-----------//
 const int cam_resolution = OV2640_640x480; //OV2640_1600x1200;
+//---------------------------//
+
+//-----Stateful Booting------//
+//
 //---------------------------//
 
 //-----PID COEFFICIENTS------//
@@ -109,7 +117,7 @@ struct PIDConstant {
 };
                                     /*Kf    Kp     Ki   Kd*/
 //const PIDConstant rightwheel = {    0,    4.5,  0.04,   0};
-//const PIDConstant leftwheel =  {    0,    4.5,  0.04,   0};
+const PIDConstant leftwheel =  {    0,    4.5,  0.04,   0};
 //---------------------------//
 
 #endif

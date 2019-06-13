@@ -20,7 +20,7 @@ void RoverCamera::begin() {
         debugStream->println(F("[INIT: Camera] Can't find OV2640 module!"));
 
         //STOP CODE
-        debugDisplay->setStopCode("CI2C");
+        //debugDisplay->setStopCode("CI2C");
 
         
       delay(1000);continue;
@@ -34,13 +34,14 @@ void RoverCamera::begin() {
     temp = myCAM.read_reg(ARDUCHIP_TEST1);
     if (temp != 0x55) {
       if (debugStream != NULL)
-        debugStream->println(F("[INIT: Camera] Error communicating with SPI. Did not recieve ACK."));
+        debugStream->print(F("[INIT: Camera] Error communicating with SPI. Did not recieve ACK. "));
+        debugStream->println(temp);
 
         //STOP CODE
-        debugDisplay->setStopCode("CSPI");
+        //debugDisplay->setStopCode("CSPI");
 
-        
-      delay(1000);continue;    
+      delay(1000);continue; 
+         
     } else {
       if (debugStream != NULL)
         debugStream->println(F("[INIT: Camera] ACK CMD SPI interface OK.")); break;
@@ -48,7 +49,7 @@ void RoverCamera::begin() {
   }
   myCAM.set_format(JPEG);
   myCAM.InitCAM();
-  myCAM.OV2640_set_JPEG_size(OV2640_1600x1200);
+  myCAM.OV2640_set_JPEG_size(OV2640_640x480);
 }
 
 /**
@@ -94,7 +95,7 @@ void RoverCamera::capture(void (*szcallback)(unsigned int len), void (*bytecallb
     debugStream->println(F("Capture Done."));  
   length = myCAM.read_fifo_length();
   if (debugStream != NULL) {
-    debugStream->print(F("The fifo length is :"));
+    debugStream->print(F("The fifo length is: "));
     debugStream->println(length);
   }
 

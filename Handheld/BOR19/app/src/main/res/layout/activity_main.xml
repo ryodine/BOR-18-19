@@ -57,7 +57,7 @@
     <TextView
         android:id="@+id/status_box"
         android:layout_width="242dp"
-        android:layout_height="145dp"
+        android:layout_height="94dp"
         android:layout_marginStart="8dp"
         android:layout_marginBottom="8dp"
         android:text="TextView"
@@ -83,6 +83,16 @@
         android:text="COLLECT SOIL"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/photo_btn" />
+
+    <Button
+        android:id="@+id/arm_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="ARM LANDING DETECTION"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/soil_btn" />
 
     <Button
         android:id="@+id/halt"

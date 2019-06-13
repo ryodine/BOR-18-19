@@ -15,13 +15,20 @@ enum LandingState {
 
 class LandingDetection {
   public:
-    LandingDetection(PositionSensing* pos, Stream* debugStream, DebugDisplay* display) : positionController(pos), state(NO_TAKEOFF), alt_avg(NULL), dstream(debugStream), state_started_ago(millis()), sample_at(millis()), debugDisp(display) {};
+    LandingDetection(PositionSensing* pos, Stream* debugStream, DebugDisplay* display) : positionController(pos), state(NO_TAKEOFF), alt_avg(NULL), dstream(debugStream), state_started_ago(millis()), sample_at(millis()), debugDisp(display), photoResistorArmed(false) {};
     void tick();
     LandingState getState() {
       return state;
     };
 
+    void begin();
+
+    void armPhoto() { photoResistorArmed = true; }
+
+    bool isArmed() { return photoResistorArmed; }
+
   private:
+    bool photoResistorArmed;
     Stream* dstream;
     DebugDisplay* debugDisp;
     PositionSensing* positionController;

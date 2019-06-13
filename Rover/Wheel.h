@@ -17,12 +17,15 @@
 
 class Wheel {
   public:
-    Wheel(int controllerPin, uint8_t encA, uint8_t encB, PIDConstant consts) 
+    Wheel(int controllerPin, uint8_t encA, uint8_t encB, uint8_t hall_effect, PIDConstant consts) 
       : encoder(encA, encB) {
         this->consts = consts;
         this->pin = controllerPin;
+        this->hall_pin = hall_effect;
+        pinMode(hall_pin, INPUT);
     }
     void setup();
+    void zero();
     void tick();
     void moveRotations(double rpm, double rotations);
     void setRPM(double rpm);
@@ -35,6 +38,12 @@ class Wheel {
   private:
     //Config
     int pin;
+    int hall_pin;
+    bool hall_latch;
+    double rotation_bias;
+    bool zeroed;
+
+    
     Servo motor;
     Encoder encoder;
     PIDConstant consts;

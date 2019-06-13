@@ -13,11 +13,11 @@
  * Setup the wheel (Run at the setup function in main)
  */
 void Wheel::setup() {
-  this->motor.attach(pin, 1000, 2000);
+  motor.attach(pin, 1000, 2000);
 }
 
 void Wheel::invert() {
-  this->inverted = !this->inverted;
+  inverted = !inverted;
 }
 
 /**
@@ -27,9 +27,24 @@ void Wheel::invert() {
  * sets the open loop control
  */
 void Wheel::tick() {
+  if (!zeroed) {
+    return;
+  }
   double thisTime = millis();
   double rot = getRotations();
   double rpm;
+
+  if (!digitalRead(hall_pin) && !hall_latch) {
+    Serial.println("asd");
+    double rot = getRotations();
+    rotation_bias -= (1.0*round(rot) - rot);
+    Serial.println(rotation_bias);
+    Serial.println(getRotations());
+    hall_latch = true;
+  } else if (digitalRead(hall_pin)) {
+    hall_latch = false;
+  }
+  
   if ((thisTime-lastTime) > RPM_AVG_MILLIS) {
     double rpm_t = (60000.0) * ((rot - lastRotation) / (thisTime - lastTime));
     
@@ -104,7 +119,7 @@ void Wheel::stop() {
  * of the program or the last time it has been reset.
  */
 double Wheel::getRotations() {
-  return ((this->inverted)? -1.0 : 1.0) * encoder.read() / (60.0 * 180.0);
+  return ((this->inverted)? -1.0 : 1.0) * encoder.read() / (131.0 * 64.0) - rotation_bias;
 }
 
 
@@ -113,4 +128,11 @@ double Wheel::getRotations() {
  */
 void Wheel::resetEncoder() {
   encoder.write(0);
+}
+
+void Wheel::zero() {
+  motor.write(135);
+  while(digitalRead(hall_pin));
+  zeroed = true;
+
 }

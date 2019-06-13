@@ -17,11 +17,13 @@ void PositionSensing::begin() {
   if (! alt->begin(BME280_I2C_ADDR, &BME280_I2C_Wire)) {
     Serial.println("[IMU] BME280 INIT: Could not find BME280 sensor");
     //STOP CODE
-    debugDisplay->setStopCode("ALT");
+    errorflags = errorflags | ALTIMITER_FAIL_MASK;
+    //debugDisplay->setStopCode("ALT");
+  } else {
+    alt->setSampling( BME280_QUALITY_ARGUMENTS );
+    alt->takeForcedMeasurement();
+    baseline_alt = alt->readAltitude(SEALEVELPRESSURE_HPA);
   }
-  alt->setSampling( BME280_QUALITY_ARGUMENTS );
-  alt->takeForcedMeasurement();
-  baseline_alt = alt->readAltitude(SEALEVELPRESSURE_HPA);
   
   debugStream->println(F("[IMU] BMP180 Init Success"));
   byte c = imu->readByte(MPU9250_I2C_Address, WHO_AM_I_MPU9250);
@@ -79,33 +81,35 @@ void PositionSensing::begin() {
         debugStream->println(F("[IMU] MPU9250 Init: Communication to AK8963 Magnetometer failed, abort!"));
         debugStream->flush();
       }
-      abort();
+      errorflags = errorflags | MAGNETO_FAIL_MASK;
     }
 
-    // Get magnetometer calibration from AK8963 ROM
-    imu->initAK8963(imu->factoryMagCalibration);
-    // Initialize device for active mode read of magnetometer
-    if (debugStream != NULL && debug) {
-      debugStream->println("[IMU] MPU9250 Init: AK8963 initialized for active data mode....");
-    }
-
-    if (debugStream != NULL && debug) {
-      //  debugStream->println("Calibration values: ");
-      debugStream->print("[IMU] MPU9250 Init: X-Axis factory sensitivity adjustment value ");
-      debugStream->println(imu->factoryMagCalibration[0], 2);
-      debugStream->print("[IMU] MPU9250 Init: Y-Axis factory sensitivity adjustment value ");
-      debugStream->println(imu->factoryMagCalibration[1], 2);
-      debugStream->print("[IMU] MPU9250 Init: Z-Axis factory sensitivity adjustment value ");
-      debugStream->println(imu->factoryMagCalibration[2], 2);
+    if (!(MAGNETO_FAIL_MASK & errorflags)) {
+      // Get magnetometer calibration from AK8963 ROM
+      imu->initAK8963(imu->factoryMagCalibration);
+      // Initialize device for active mode read of magnetometer
+      if (debugStream != NULL && debug) {
+        debugStream->println("[IMU] MPU9250 Init: AK8963 initialized for active data mode....");
+      }
+  
+      if (debugStream != NULL && debug) {
+        //  debugStream->println("Calibration values: ");
+        debugStream->print("[IMU] MPU9250 Init: X-Axis factory sensitivity adjustment value ");
+        debugStream->println(imu->factoryMagCalibration[0], 2);
+        debugStream->print("[IMU] MPU9250 Init: Y-Axis factory sensitivity adjustment value ");
+        debugStream->println(imu->factoryMagCalibration[1], 2);
+        debugStream->print("[IMU] MPU9250 Init: Z-Axis factory sensitivity adjustment value ");
+        debugStream->println(imu->factoryMagCalibration[2], 2);
+      }
     }
 
     imu->getAres();
     imu->getGres();
     imu->getMres();
-    if (calibrate_magneto) {
+    if (!(MAGNETO_FAIL_MASK & errorflags) && calibrate_magneto) {
       imu->magCalMPU9250(imu->magBias, imu->magScale);
     }
-    if (debugStream != NULL && debug) {
+    if (!(MAGNETO_FAIL_MASK & errorflags) && debugStream != NULL && debug) {
       //debugStream->println("[IMU] MPU9250 Init: Done with calibration of Biases ");
       debugStream->print(F("[IMU] MPU9250 Init: AK8963 mag biases (mG) "));
       debugStream->print(imu->magBias[0]);
@@ -131,29 +135,39 @@ void PositionSensing::begin() {
     }
     
   } else if (debugStream != NULL) {
-    debugStream->println(F("[IMU] MPU9250 Init: /!\\ FATAL ERROR I AM OFFLINE. This program will NOT proceed"));
+    debugStream->println(F("[IMU] MPU9250 Init: /!\\ FATAL ERROR I AM OFFLINE!!"));
     //STOP CODE
-    debugDisplay->setStopCode("9250");
+    errorflags = errorflags | MPU9250_FAIL_MASK;
   }
-  if (debugStream != NULL) {
+  if (debugStream != NULL && !(MPU9250_FAIL_MASK & errorflags)) {
     debugStream->println(F("[IMU] MPU9250 Init: Completed"));
   }
 }
 
 void PositionSensing::tick() {
   //Altimiter stuff first
-  temperature = alt->readTemperature();
-  pressure = alt->readPressure();
-  float altitude_temp = altitude;
-  altitude = alt->readAltitude(SEALEVELPRESSURE_HPA);
-  if (isnan(altitude) || floor(altitude) == floor(-1395.92)) {
-    // ALTITUDE READ FAIL
-    altitude = altitude_temp;
-    errorflags = errorflags | 0b00000001;
+
+  //skip execution if there is an initialization failure
+  if (errorflags & (ALTIMITER_FAIL_MASK | MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK))
+    return;
+  
+  if (!(errorflags & ALTIMITER_FAIL_MASK)) {
+    temperature = alt->readTemperature();
+    pressure = alt->readPressure();
+    float altitude_temp = altitude;
+    altitude = alt->readAltitude(SEALEVELPRESSURE_HPA);
+    if (isnan(altitude) || floor(altitude) == floor(-1395.92)) {
+      // ALTITUDE READ FAIL
+      altitude = altitude_temp;
+      errorflags = errorflags | ALTIMITER_ERROR_MASK;
+    } else {
+      errorflags = errorflags & !ALTIMITER_ERROR_MASK;
+    }
+    humidity = alt->readHumidity();
   } else {
-    errorflags = errorflags & 0b11111110;
+    humidity = -1;
+    altitude = -1;
   }
-  humidity = alt->readHumidity();
   
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
@@ -311,19 +325,53 @@ void PositionSensing::tick() {
   } // if (AHRS)
 }
 
-float PositionSensing::getPressure() { return pressure; }
+float PositionSensing::getPressure() { 
+  if (errorflags & (ALTIMITER_FAIL_MASK | MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK)) {
+    return -1;
+  }
+  return pressure;
+}
 
-float PositionSensing::getTemperature() { return temperature; }
+float PositionSensing::getTemperature() { 
+  if (errorflags & (ALTIMITER_FAIL_MASK | MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK)) {
+    return -1;
+  }
+  return temperature;
+}
 
-float PositionSensing::getHumidity() { return humidity; }
+float PositionSensing::getHumidity() {
+  if (errorflags & (ALTIMITER_FAIL_MASK | MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK)) {
+    return -1;
+  }
+  return humidity;
+}
 
-float PositionSensing::getPitch() { return imu->pitch - zPitch; };
+float PositionSensing::getPitch() {
+  if (errorflags & (ALTIMITER_FAIL_MASK | MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK)) {
+    return -1;
+  }
+  return imu->pitch - zPitch;
+}
 
-float PositionSensing::getYaw() { return imu->yaw - zYaw; };
+float PositionSensing::getYaw() {
+  if (errorflags & (ALTIMITER_FAIL_MASK | MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK)) {
+    return -1;
+  }
+  return imu->yaw - zYaw;
+}
 
-float PositionSensing::getRoll() { return imu->roll - zRoll; };
+float PositionSensing::getRoll() {
+  if (errorflags & (ALTIMITER_FAIL_MASK | MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK)) {
+    return -1;
+  }
+  return imu->roll - zRoll;
+}
 
-float PositionSensing::getAltitude() { return altitude - baseline_alt; };
+float PositionSensing::getAltitude() { 
+  if (errorflags & (ALTIMITER_FAIL_MASK | ALTIMITER_ERROR_MASK))
+    return -1;
+  return altitude - baseline_alt; 
+};
 
 void PositionSensing::zero() { zPitch = imu->pitch; zYaw = imu->yaw; zRoll = imu->roll; };
 
@@ -332,12 +380,12 @@ void PositionSensing::print() {
     return;
   }
   StreamEx debug = *debugStream;
-  debug.println(F("[IMU]: State Summary"));
-  debug.printf(F("       Pitch: %10.2f ˚\n"), getPitch());
-  debug.printf(F("       Yaw:   %10.2f ˚\n"), getYaw());
-  debug.printf(F("       Roll:  %10.2f ˚\n"), getRoll());
-  debug.printf(F("       Alt:   %10.2f m\n"), getAltitude());
-  debug.printf(F("       Temp:  %10.2f ˚C\n"), getTemperature());
-  debug.printf(F("       Pres:  %10.2f hPa\n"), getPressure() / 100.0F);
-  debug.printf(F("       RH:    %10.2f %%\n"), getHumidity());
+  debug.println("[IMU]: State Summary");
+  debug.printf("       Pitch: %10.2f ˚\n", getPitch());
+  debug.printf("       Yaw:   %10.2f ˚\n", getYaw());
+  debug.printf("       Roll:  %10.2f ˚\n", getRoll());
+  debug.printf("       Alt:   %10.2f m\n", getAltitude());
+  debug.printf("       Temp:  %10.2f ˚C\n", getTemperature());
+  debug.printf("       Pres:  %10.2f hPa\n", getPressure() / 100.0F);
+  debug.printf("       RH:    %10.2f %%\n", getHumidity());
 }

@@ -58,6 +58,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        findViewById(R.id.arm_btn).setOnClickListener(v -> {
+            if (xbee.state == XBEESerial.CommunicationState.CONNECTED) {
+                xbee.messenger.sendArm();
+            }
+        });
+
+        findViewById(R.id.soil_btn).setOnClickListener(v -> {
+            if (xbee.state == XBEESerial.CommunicationState.CONNECTED) {
+                xbee.messenger.sendSoil();
+            }
+        });
+
         //Subsystems
         xbee = new XBEESerial(this);
 

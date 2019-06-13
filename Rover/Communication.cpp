@@ -65,7 +65,10 @@ CommReturnCode CommLayer::tick() {
               unread_msg = true;
             } else if (strncmp(value, "ping", 4) == 0) {
               //retreive status
-              msgin.action = PING;
+              msgin.action = PINGM;
+              unread_msg = true;
+            } else if (strncmp(value, "arm", 3) == 0) {
+              msgin.action = ARM;
               unread_msg = true;
             }
           }

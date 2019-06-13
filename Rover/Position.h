@@ -39,6 +39,9 @@
 #include "DebugDisplay.h"
 
 #define ALTIMITER_ERROR_MASK 0b00000001
+#define ALTIMITER_FAIL_MASK 0b00000010
+#define MPU9250_FAIL_MASK 0b00000100
+#define MAGNETO_FAIL_MASK 0b00001000
 
 class PositionSensing {
   public:
@@ -67,7 +70,7 @@ class PositionSensing {
     boolean calibrate_magneto;
 
     
-    float baseline_alt;
+    float baseline_alt; // Should be backed up
     float pressure;
     float temperature;
     float humidity;
@@ -75,9 +78,9 @@ class PositionSensing {
                       
     byte errorflags = 0b00000000;
                      /* |||||||+-- Altimiter Broke
-                      * ||||||+--
-                      * |||||+--
-                      * ||||+--
+                      * ||||||+-- Altimiter failed to initialize at boot
+                      * |||||+-- MPU9250 Failed at start
+                      * ||||+-- Magneto fail
                       * |||+--
                       * ||+--
                       * |+--
