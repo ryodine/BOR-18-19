@@ -27,19 +27,13 @@ void Wheel::invert() {
  * sets the open loop control
  */
 void Wheel::tick() {
-  if (!zeroed) {
-    return;
-  }
   double thisTime = millis();
   double rot = getRotations();
   double rpm;
 
   if (!digitalRead(hall_pin) && !hall_latch) {
-    Serial.println("asd");
     double rot = getRotations();
     rotation_bias -= (1.0*round(rot) - rot);
-    Serial.println(rotation_bias);
-    Serial.println(getRotations());
     hall_latch = true;
   } else if (digitalRead(hall_pin)) {
     hall_latch = false;
@@ -58,25 +52,34 @@ void Wheel::tick() {
   }
   switch (mode) {
     case RPM: {
-        double delta = rpm - lastRPM;
-        double error = setpoint - lastRPM;
-        if (!isnan(error))
-          errorAccumulator += error;
+      double delta = rpm - lastRPM;
+      double error = setpoint - lastRPM;
+      if (!isnan(error))
+        errorAccumulator += error;
 
-        errorAccumulator = max(-ERROR_BAND, errorAccumulator);
-        errorAccumulator = min(ERROR_BAND, errorAccumulator);
+      errorAccumulator = max(-ERROR_BAND, errorAccumulator);
+      errorAccumulator = min(ERROR_BAND, errorAccumulator);
 
-        double pid = consts.Kf + consts.Kp * error + consts.Ki * errorAccumulator + consts.Kd * delta;
-        pid = max(pid, -90);
-        pid = min(pid, 90);
-        motor.write(90 + ((this->inverted)? -1.0 : 1.0) *pid);
-      }
-      break;
+      double pid = consts.Kf + consts.Kp * error + consts.Ki * errorAccumulator + consts.Kd * delta;
+      pid = max(pid, -90);
+      pid = min(pid, 90);
+      motor.write(90 + ((this->inverted)? -1.0 : 1.0) *pid);
+    }
+    break;
     case PercentVBus: {
-        errorAccumulator = 0;
-        motor.write( 90 + setpoint);
+      errorAccumulator = 0;
+      motor.write( 90 + 60.0*setpoint);
+    }
+    break;
+    case Zero: {
+      motor.write(((this->inverted)? -1.0 : 1.0) * 135);
+      if (!digitalRead(hall_pin)) {
+        zeroed = true;
+        mode = PercentVBus;
+        setpoint = 0.0;
       }
-      break;
+    }
+    break;
   }
 
   
@@ -89,10 +92,12 @@ void Wheel::tick() {
 
 /**
  * Sets the controller to open loop (Percent vBus mode)
- * Speed is -90 to 90.
+ * Speed is -1 to 1.
  */
 void Wheel::setOpenLoop(double speed) {
   mode = PercentVBus;
+  if (speed > 1.0)  speed = 1.0;
+  if (speed < -1.0) speed = -1.0;
   setpoint = ((this->inverted)? -1.0 : 1.0) * speed;
   
 }
@@ -131,8 +136,10 @@ void Wheel::resetEncoder() {
 }
 
 void Wheel::zero() {
-  motor.write(135);
-  while(digitalRead(hall_pin));
-  zeroed = true;
+  zeroed = false;
+  mode = Zero;
+}
 
+boolean Wheel::isStowed() {
+  return !digitalRead(hall_pin);
 }

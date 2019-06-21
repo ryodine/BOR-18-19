@@ -4,7 +4,7 @@
 #include "Position.h"
 #include "DebugDisplay.h"
 #include "LandingDetection.h"
-#include "Wheel.h"
+#include "Drivetrain.h"
 #include <Servo.h>
 
 #define PROTOC Serial3
@@ -16,11 +16,11 @@ CommLayer uplink(&PROTOC, &DEBUG, &debug);
 RoverCamera cam(PIN_CAM_SPI_CS, &DEBUG, &debug);
 PositionSensing pos(&DEBUG, &debug);
 LandingDetection landingDetect(&pos, &DEBUG, &debug);
+Drivetrain drive;
 
 unsigned long error_flasher = 0;
 bool error_light_on = false;
 
-Wheel leftWheel(8,4,5,11, leftwheel);
 
 void setup() {
   DEBUG.begin(DEBUG_BAUD);
@@ -35,13 +35,12 @@ void setup() {
   cam.begin();
   pos.begin();
   landingDetect.begin();
-
-  //Wheel
-  //leftWheel.setup();
-  //leftWheel.zero();
+  drive.setup();
   
   DEBUG.println("[INIT] Completed");
   debug.setChar("run");
+
+  drive.zero();
 }
 
 // Camera photo callbacks
@@ -68,14 +67,12 @@ void loop() {
   landingDetect.tick();
   uplink.tick();
   debug.tick();
-  //Serial.println(leftWheel.getRotations());
-  if (leftWheel.getRotations() > 3.5 && l != -1) {
-    l = -1;
-  } else if (leftWheel.getRotations() < 1.5 && l != 1) {
-    l = 1;
+  drive.tick();
+
+  //Drive tests:
+  if (drive.getControlMode() == Drivetrain::DCR_STOP) {
+    drive.setSynchronizedRPM(14);
   }
-  leftWheel.setOpenLoop(90 * l);
-  leftWheel.tick();
   
   //Error Flasher
   if (pos.hasError() && ((millis() - error_flasher) > 100)) {

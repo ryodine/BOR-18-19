@@ -14,6 +14,16 @@
  
 //----------HARDWARE----------//
 #define ROATION_TRANSLATION_RATIO
+
+#define LEFT_ENC_A 2
+#define LEFT_ENC_B 3
+#define LEFT_PWM   7
+#define LEFT_HALL  22
+
+#define RIGHT_ENC_A 18
+#define RIGHT_ENC_B 19
+#define RIGHT_PWM   8
+#define RIGHT_HALL  23
 //---------------------------//
 
 
@@ -116,7 +126,7 @@ struct PIDConstant {
   double Kd;
 };
                                     /*Kf    Kp     Ki   Kd*/
-//const PIDConstant rightwheel = {    0,    4.5,  0.04,   0};
+const PIDConstant rightwheel = {    0,    4.5,  0.04,   0};
 const PIDConstant leftwheel =  {    0,    4.5,  0.04,   0};
 //---------------------------//
 

@@ -17,13 +17,17 @@
 
 class Wheel {
   public:
-    Wheel(int controllerPin, uint8_t encA, uint8_t encB, uint8_t hall_effect, PIDConstant consts) 
-      : encoder(encA, encB) {
+
+    //Control Loop Mode
+    enum ControlMode { PercentVBus, RPM, Zero };
+  
+    Wheel(int controllerPin, uint8_t encA, uint8_t encB, uint8_t hall_effect, PIDConstant consts) : encoder(encA, encB) {
         this->consts = consts;
         this->pin = controllerPin;
         this->hall_pin = hall_effect;
         pinMode(hall_pin, INPUT);
     }
+    
     void setup();
     void zero();
     void tick();
@@ -35,6 +39,8 @@ class Wheel {
     double getRotations();
     void resetEncoder();
     void invert();
+    ControlMode getControlMode() { return mode; }
+    boolean isStowed();
   private:
     //Config
     int pin;
@@ -57,8 +63,6 @@ class Wheel {
 
     bool inverted = false;
 
-    //Control Loop Mode
-    enum ControlMode { PercentVBus, RPM };
     ControlMode mode = PercentVBus;
     double setpoint = 0.0;
 };
