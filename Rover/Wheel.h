@@ -19,7 +19,7 @@ class Wheel {
   public:
 
     //Control Loop Mode
-    enum ControlMode { PercentVBus, RPM, Zero };
+    enum ControlMode { PercentVBus, RPM, Zero, Commutate };
   
     Wheel(int controllerPin, uint8_t encA, uint8_t encB, uint8_t hall_effect, PIDConstant consts) : encoder(encA, encB) {
         this->consts = consts;
@@ -41,6 +41,7 @@ class Wheel {
     void invert();
     ControlMode getControlMode() { return mode; }
     boolean isStowed();
+    void CommutateTo(ControlMode next);
   private:
     //Config
     int pin;
@@ -64,6 +65,7 @@ class Wheel {
     bool inverted = false;
 
     ControlMode mode = PercentVBus;
+    ControlMode stateFinishMode = PercentVBus;
     double setpoint = 0.0;
 };
 

@@ -35,12 +35,15 @@ void setup() {
   cam.begin();
   pos.begin();
   landingDetect.begin();
-  drive.setup();
+  //drive.setup();
+  //drive.getRightWheel().setRPM(20);
   
   DEBUG.println("[INIT] Completed");
   debug.setChar("run");
 
-  drive.zero();
+  //drive.zero();
+  //drive.getRightWheel().setRPM(20);
+  //drive.getRightWheel().CommutateTo(Wheel::RPM);
 }
 
 // Camera photo callbacks
@@ -67,12 +70,7 @@ void loop() {
   landingDetect.tick();
   uplink.tick();
   debug.tick();
-  drive.tick();
-
-  //Drive tests:
-  if (drive.getControlMode() == Drivetrain::DCR_STOP) {
-    drive.setSynchronizedRPM(14);
-  }
+  //drive.tick();
   
   //Error Flasher
   if (pos.hasError() && ((millis() - error_flasher) > 100)) {
@@ -128,21 +126,40 @@ void loop() {
           break;
       }
 
+      body += "\nmillis: ";
+      body += String(millis()) + "\n";
+
       uplink.writeHeader(STATUS, body.length() + 1, M_OK); //write OK message with no body
       uplink.writeBodyBytes((unsigned char*)body.c_str(), body.length() + 1);
       uplink.concludeMessage();
     } else if (uplink.getLatestMessage()->action == SOIL_SAMPLE) {
+      delay(1000);
       uplink.writeHeader(STATUS, 8, M_OK); //write OK message with no body
-      uplink.writeBodyBytes((unsigned char *)"soil req", 4);
+      /*if (drive.getControlMode() == Drivetrain::DCR_STOP) {
+        drive.setSynchronizedRPM(20);
+      }*/
+      uplink.writeBodyBytes((unsigned char *)"soil req", 9);
       uplink.concludeMessage();
     } else if (uplink.getLatestMessage()->action == PINGM) {
       uplink.writeHeader(PONG, 4, M_OK);
-      uplink.writeBodyBytes((unsigned char *)"pong", 4);
+      uplink.writeBodyBytes((unsigned char *)"pong", 5);
       uplink.concludeMessage();
     } else if (uplink.getLatestMessage()->action == ARM) {
       landingDetect.armPhoto();
       uplink.writeHeader(ARMED, 2, M_OK);
-      uplink.writeBodyBytes((unsigned char *)"ok", 4);
+      uplink.writeBodyBytes((unsigned char *)"ok", 3);
+      uplink.concludeMessage();
+    } else if (uplink.getLatestMessage()->action == MANUAL_LAND) {
+      uplink.writeHeader(COMMAND_ACK, 2, M_OK);
+      uplink.writeBodyBytes((unsigned char *)"ok", 3);
+      uplink.concludeMessage();
+    } else if (uplink.getLatestMessage()->action == ZERO_LEGS) {
+      uplink.writeHeader(COMMAND_ACK, 2, M_OK);
+      uplink.writeBodyBytes((unsigned char *)"ok", 3);
+      uplink.concludeMessage();
+    } else {
+      uplink.writeHeader(COMMAND_ACK, 2, M_UNPARSEABLE);
+      uplink.writeBodyBytes((unsigned char *)"unknown", 8);
       uplink.concludeMessage();
     }
   }

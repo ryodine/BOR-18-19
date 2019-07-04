@@ -15,13 +15,13 @@
 //----------HARDWARE----------//
 #define ROATION_TRANSLATION_RATIO
 
-#define LEFT_ENC_A 2
-#define LEFT_ENC_B 3
+#define LEFT_ENC_A 18
+#define LEFT_ENC_B 19
 #define LEFT_PWM   7
 #define LEFT_HALL  22
 
-#define RIGHT_ENC_A 18
-#define RIGHT_ENC_B 19
+#define RIGHT_ENC_A 2
+#define RIGHT_ENC_B 3
 #define RIGHT_PWM   8
 #define RIGHT_HALL  23
 //---------------------------//
@@ -61,7 +61,9 @@ enum ActionType {
   GET_STAT,
   SOIL_SAMPLE,
   ARM,
-  PINGM };
+  PINGM,
+  ZERO_LEGS,
+  MANUAL_LAND};
 
 // Outgoing Messages
 enum OutgoingMessageType {
@@ -70,7 +72,8 @@ enum OutgoingMessageType {
   STATUS,
   ROUTINE_COMPLETE,
   PONG,
-  ARMED
+  ARMED,
+  COMMAND_ACK
 };
 
 enum OutgoingMessageStatus {

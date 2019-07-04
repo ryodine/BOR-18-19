@@ -70,6 +70,12 @@ CommReturnCode CommLayer::tick() {
             } else if (strncmp(value, "arm", 3) == 0) {
               msgin.action = ARM;
               unread_msg = true;
+            } else if (strncmp(value, "zero", 3) == 0) {
+              msgin.action = ZERO_LEGS;
+              unread_msg = true;
+            } else if (strncmp(value, "land", 3) == 0) {
+              msgin.action = MANUAL_LAND;
+              unread_msg = true;
             }
           }
           break;

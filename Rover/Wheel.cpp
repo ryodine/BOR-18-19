@@ -66,13 +66,18 @@ void Wheel::tick() {
       motor.write(90 + ((this->inverted)? -1.0 : 1.0) *pid);
     }
     break;
+    case Commutate: {
+      if (abs(rpm) > 20) {
+        mode = stateFinishMode;
+      }
+    } break;
     case PercentVBus: {
       errorAccumulator = 0;
       motor.write( 90 + 60.0*setpoint);
     }
     break;
     case Zero: {
-      motor.write(((this->inverted)? -1.0 : 1.0) * 135);
+      motor.write(((this->inverted)? -1.0 : 1.0) * 165);
       if (!digitalRead(hall_pin)) {
         zeroed = true;
         mode = PercentVBus;
@@ -142,4 +147,11 @@ void Wheel::zero() {
 
 boolean Wheel::isStowed() {
   return !digitalRead(hall_pin);
+}
+
+void Wheel::CommutateTo(ControlMode next) {
+  mode = Commutate;
+  stateFinishMode = next;
+  lastTime = millis();
+  motor.write(((this->inverted)? -1.0 : 1.0) * 135);
 }

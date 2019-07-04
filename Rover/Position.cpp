@@ -146,10 +146,6 @@ void PositionSensing::begin() {
 
 void PositionSensing::tick() {
   //Altimiter stuff first
-
-  //skip execution if there is an initialization failure
-  if (errorflags & (ALTIMITER_FAIL_MASK | MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK))
-    return;
   
   if (!(errorflags & ALTIMITER_FAIL_MASK)) {
     temperature = alt->readTemperature();
@@ -168,6 +164,10 @@ void PositionSensing::tick() {
     humidity = -1;
     altitude = -1;
   }
+
+  //skip rest of execution if there is an initialization failure
+  if (errorflags & (MAGNETO_FAIL_MASK | MPU9250_FAIL_MASK))
+    return;
   
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt

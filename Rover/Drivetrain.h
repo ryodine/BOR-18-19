@@ -8,7 +8,7 @@ class Drivetrain {
   public:
     Drivetrain() : left(LEFT_PWM,  LEFT_ENC_A,  LEFT_ENC_B,  LEFT_HALL,  leftwheel ), right(RIGHT_PWM, RIGHT_ENC_A, RIGHT_ENC_B, RIGHT_HALL, rightwheel) {};
 
-    enum DrivetrainControlMode {DCR_STOP, DCR_SYNCHRO, DCR_ZERO};
+    enum DrivetrainControlMode {DCR_STOP, DCR_SYNCHRO, DCR_ZERO, DCR_COMMUTATE};
     
     void tick();
     void setup();
@@ -23,8 +23,11 @@ class Drivetrain {
   private:
 
     DrivetrainControlMode mode = DCR_STOP;
+    DrivetrainControlMode onCommutateFinish = DCR_STOP;
+    Wheel::ControlMode onCommutateFinishCommand = Wheel::PercentVBus;
     double setpoint = 0.0;
     double set_delta = 0.0;
+
     
     // Initialize wheels based on constants
     Wheel left;
