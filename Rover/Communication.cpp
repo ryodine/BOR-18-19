@@ -76,6 +76,9 @@ CommReturnCode CommLayer::tick() {
             } else if (strncmp(value, "land", 3) == 0) {
               msgin.action = MANUAL_LAND;
               unread_msg = true;
+            } else {
+              msgin.action = UNKNOWN;
+              unread_msg = true;
             }
           }
           break;

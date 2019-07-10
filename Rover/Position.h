@@ -75,6 +75,9 @@ class PositionSensing {
     float temperature;
     float humidity;
     float altitude;
+
+    const int altimiter_retries = 15;
+    int altimiter_retries_remaining = altimiter_retries;
                       
     byte errorflags = 0b00000000;
                      /* |||||||+-- Altimiter Broke

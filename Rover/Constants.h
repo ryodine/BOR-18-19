@@ -24,14 +24,14 @@
 #define RIGHT_ENC_B 3
 #define RIGHT_PWM   8
 #define RIGHT_HALL  23
-//---------------------------//
 
-
-//----------PINOUTS----------//
 #define PIN_CAM_SPI_CS 12
+#define PRS_PWM 5
+#define VAC_PIN 6
 
+#define DEBUG_DISPLAY_I2C 0x04
+#define DEBUG_DISPLAY_ENABLE_PIN 4
 //---------------------------//
-
 
 //------PID CONTROLLER-------//
 #define ERROR_BAND 1000
@@ -63,7 +63,9 @@ enum ActionType {
   ARM,
   PINGM,
   ZERO_LEGS,
-  MANUAL_LAND};
+  MANUAL_LAND,
+
+  UNKNOWN};
 
 // Outgoing Messages
 enum OutgoingMessageType {
@@ -117,8 +119,11 @@ enum OutgoingMessageStatus {
 const int cam_resolution = OV2640_640x480; //OV2640_1600x1200;
 //---------------------------//
 
-//-----Stateful Booting------//
-//
+//-------ROUTINE CONSTS------//
+#define PRS_CLOSE_VALUE 90
+#define PRS_OPEN_VALUE 180
+#define LANDED_FORWARD_STEPS 5.0
+#define FW_RPM 40.0
 //---------------------------//
 
 //-----PID COEFFICIENTS------//
@@ -129,8 +134,8 @@ struct PIDConstant {
   double Kd;
 };
                                     /*Kf    Kp     Ki   Kd*/
-const PIDConstant rightwheel = {    0,    4.5,  0.04,   0};
-const PIDConstant leftwheel =  {    0,    4.5,  0.04,   0};
+const PIDConstant rightwheel = {    0,    2.5,  0.6,   0};
+const PIDConstant leftwheel =  {    0,    2.5,  0.6,   0};
 //---------------------------//
 
 #endif

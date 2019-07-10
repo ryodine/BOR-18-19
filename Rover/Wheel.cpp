@@ -54,6 +54,7 @@ void Wheel::tick() {
     case RPM: {
       double delta = rpm - lastRPM;
       double error = setpoint - lastRPM;
+
       if (!isnan(error))
         errorAccumulator += error;
 
@@ -67,7 +68,7 @@ void Wheel::tick() {
     }
     break;
     case Commutate: {
-      if (abs(rpm) > 20) {
+      if (abs(rpm) > 10) {
         mode = stateFinishMode;
       }
     } break;
@@ -153,5 +154,5 @@ void Wheel::CommutateTo(ControlMode next) {
   mode = Commutate;
   stateFinishMode = next;
   lastTime = millis();
-  motor.write(((this->inverted)? -1.0 : 1.0) * 135);
+  motor.write(((this->inverted)? -1.0 : 1.0) * 125);
 }

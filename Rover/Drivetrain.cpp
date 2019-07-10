@@ -51,7 +51,10 @@ void Drivetrain::tick() {
       double positional_error = getLeftWheel().getRotations() - getRightWheel().getRotations() - set_delta;
       const double k_p = 30.0;
       double pid_result = positional_error * k_p;
+
       if (pid_result > setpoint) pid_result = setpoint;
+      //if (pid_result < 0) pid_result = setpoint;
+
       getLeftWheel().setRPM(setpoint - pid_result);
       getRightWheel().setRPM(setpoint + pid_result);
       if (millis()%500) {
@@ -73,9 +76,9 @@ void Drivetrain::tick() {
 
 void Drivetrain::zero() {
   onCommutateFinishCommand = Wheel::PercentVBus;
+  onCommutateFinish = DCR_ZERO;
   getLeftWheel().CommutateTo(onCommutateFinishCommand);
   getRightWheel().CommutateTo(onCommutateFinishCommand);
-  onCommutateFinish = DCR_ZERO;
   mode = DCR_COMMUTATE;
 }
 
@@ -92,9 +95,9 @@ void Drivetrain::sit() {
 
 void Drivetrain::setSynchronizedRPM(double rpm) {
   onCommutateFinishCommand = Wheel::RPM;
+  onCommutateFinish = DCR_SYNCHRO;
   getLeftWheel().CommutateTo(onCommutateFinishCommand);
   getRightWheel().CommutateTo(onCommutateFinishCommand);
-  onCommutateFinish = DCR_SYNCHRO;
   mode = DCR_COMMUTATE;
   setpoint = rpm;
 }

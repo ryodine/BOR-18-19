@@ -155,8 +155,12 @@ void PositionSensing::tick() {
     if (isnan(altitude) || floor(altitude) == floor(-1395.92)) {
       // ALTITUDE READ FAIL
       altitude = altitude_temp;
-      errorflags = errorflags | ALTIMITER_ERROR_MASK;
+      if (altimiter_retries_remaining <= 0)
+        errorflags = errorflags | ALTIMITER_ERROR_MASK;
+      else
+        altimiter_retries_remaining--;
     } else {
+      altimiter_retries_remaining = altimiter_retries;
       errorflags = errorflags & !ALTIMITER_ERROR_MASK;
     }
     humidity = alt->readHumidity();
